@@ -1,78 +1,76 @@
-// Select elements
 const leftPaddle = document.getElementById('left-paddle');
 const rightPaddle = document.getElementById('right-paddle');
 const ball = document.getElementById('ball');
 const scoreDisplay = document.getElementById('score');
 const gameContainer = document.querySelector('.game-container');
+const startButton = document.getElementById('start-button');
+const pauseButton = document.getElementById('pause-button');
 
-// Game variables
-let leftPaddleY = 150, rightPaddleY = 150;
-let ballX = 292.5, ballY = 192.5;
-let ballSpeedX = (Math.random() > 0.5 ? 2 : -2);
-let ballSpeedY = (Math.random() > 0.5 ? 2 : -2);
-const paddleSpeed = 6;
-const gameHeight = gameContainer.clientHeight;
-const gameWidth = gameContainer.clientWidth;
-let leftScore = 0, rightScore = 0;
-let gameRunning = true;
+let leftPaddleY = 150;
+let rightPaddleY = 150;
+let ballX = 292.5, ballY = 192.5, ballSpeedX = 2, ballSpeedY = 2;
+const paddleSpeed = 4;
+let gamePaused = false;
+let gameStarted = false;
 
-// Controls
+let leftScore = 0;
+let rightScore = 0;
+
 const keysPressed = {
-    w: false, s: false, ArrowUp: false, ArrowDown: false
+    ArrowUp: false,
+    ArrowDown: false,
+    w: false,
+    s: false
 };
 
-// Paddle Movement
+// Move paddles smoothly
 function movePaddles() {
-    if (keysPressed['w']) leftPaddleY -= paddleSpeed;
-    if (keysPressed['s']) leftPaddleY += paddleSpeed;
-    if (keysPressed['ArrowUp']) rightPaddleY -= paddleSpeed;
-    if (keysPressed['ArrowDown']) rightPaddleY += paddleSpeed;
+    if (keysPressed['ArrowUp']) leftPaddleY -= paddleSpeed;
+    if (keysPressed['ArrowDown']) leftPaddleY += paddleSpeed;
+    if (keysPressed['w']) rightPaddleY -= paddleSpeed;
+    if (keysPressed['s']) rightPaddleY += paddleSpeed;
 
-    leftPaddleY = Math.max(0, Math.min(leftPaddleY, gameHeight - leftPaddle.offsetHeight));
-    rightPaddleY = Math.max(0, Math.min(rightPaddleY, gameHeight - rightPaddle.offsetHeight));
+    if (leftPaddleY < 0) leftPaddleY = 0;
+    if (leftPaddleY > gameContainer.clientHeight - leftPaddle.offsetHeight) leftPaddleY = gameContainer.clientHeight - leftPaddle.offsetHeight;
+    if (rightPaddleY < 0) rightPaddleY = 0;
+    if (rightPaddleY > gameContainer.clientHeight - rightPaddle.offsetHeight) rightPaddleY = gameContainer.clientHeight - rightPaddle.offsetHeight;
 
     leftPaddle.style.top = leftPaddleY + 'px';
     rightPaddle.style.top = rightPaddleY + 'px';
 }
 
-// Ball Movement
+// Move the ball
 function moveBall() {
-    if (!gameRunning) return;
+    if (gamePaused) return;
 
     ballX += ballSpeedX;
     ballY += ballSpeedY;
 
-    // Ball collision with top and bottom walls
-    if (ballY <= 0 || ballY >= gameHeight - ball.offsetHeight) {
+    // Ball bouncing off top and bottom walls (speed up after each bounce)
+    if (ballY <= 0 || ballY >= gameContainer.clientHeight - ball.offsetHeight) {
         ballSpeedY = -ballSpeedY;
-        playSound('bounce');
+        increaseBallSpeed();  // Speed up the ball after hitting the wall
     }
 
-    // Ball collision with paddles
+    // Ball bouncing off left paddle
     if (ballX <= leftPaddle.offsetWidth && ballY >= leftPaddleY && ballY <= leftPaddleY + leftPaddle.offsetHeight) {
         ballSpeedX = -ballSpeedX;
-        increaseBallSpeed();
-        playSound('paddle');
     }
 
-    if (ballX >= gameWidth - ball.offsetWidth - rightPaddle.offsetWidth && ballY >= rightPaddleY && ballY <= rightPaddleY + rightPaddle.offsetHeight) {
+    // Ball bouncing off right paddle
+    if (ballX >= gameContainer.clientWidth - ball.offsetWidth - rightPaddle.offsetWidth && ballY >= rightPaddleY && ballY <= rightPaddleY + rightPaddle.offsetHeight) {
         ballSpeedX = -ballSpeedX;
-        increaseBallSpeed();
-        playSound('paddle');
     }
 
-    // Ball out of bounds (Scoring)
     if (ballX <= 0) {
-        rightScore++;
+        rightScore += 1;
         updateScore();
-        playSound('score');
         resetBall();
     }
 
-    if (ballX >= gameWidth - ball.offsetWidth) {
-        leftScore++;
+    if (ballX >= gameContainer.clientWidth - ball.offsetWidth) {
+        leftScore += 1;
         updateScore();
-        playSound('score');
         resetBall();
     }
 
@@ -80,70 +78,69 @@ function moveBall() {
     ball.style.top = ballY + 'px';
 }
 
-// Update Score & Check for Winner
+// Update the score
 function updateScore() {
     scoreDisplay.textContent = `${leftScore} - ${rightScore}`;
-    
-    if (leftScore >= 5 || rightScore >= 5) {
-        gameRunning = false;
-        scoreDisplay.textContent = `Game Over! ${leftScore >= 5 ? 'Left' : 'Right'} Player Wins`;
-        setTimeout(() => restartGame(), 2000);
-    }
 }
 
-// Reset Ball
+// Reset the ball to the center
 function resetBall() {
     ballX = 292.5;
     ballY = 192.5;
-    ballSpeedX = (Math.random() > 0.5 ? 2 : -2);
-    ballSpeedY = (Math.random() > 0.5 ? 2 : -2);
+    ballSpeedX = 2;
+    ballSpeedY = 2;
 }
 
-// Increase Ball Speed Over Time
+// Increase ball speed slightly
 function increaseBallSpeed() {
-    ballSpeedX *= 1.1;
-    ballSpeedY *= 1.1;
-    if (Math.abs(ballSpeedX) > 6) ballSpeedX = (ballSpeedX > 0 ? 6 : -6);
-    if (Math.abs(ballSpeedY) > 6) ballSpeedY = (ballSpeedY > 0 ? 6 : -6);
+    ballSpeedX *= 1.05;  // Increase horizontal speed by 5%
+    ballSpeedY *= 1.05;  // Increase vertical speed by 5%
 }
 
-// Restart Game
-function restartGame() {
-    leftScore = 0;
-    rightScore = 0;
-    gameRunning = true;
-    updateScore();
-    resetBall();
+// Handle key press
+function keyDownHandler(e) {
+    if (e.key in keysPressed) {
+        keysPressed[e.key] = true;
+    }
 }
 
-// Handle Key Events
-document.addEventListener('keydown', (e) => {
-    if (e.key in keysPressed) keysPressed[e.key] = true;
-});
-document.addEventListener('keyup', (e) => {
-    if (e.key in keysPressed) keysPressed[e.key] = false;
-});
+// Handle key release
+function keyUpHandler(e) {
+    if (e.key in keysPressed) {
+        keysPressed[e.key] = false;
+    }
+}
 
-// Game Loop
+// Start the game
+function startGame() {
+    if (!gameStarted) {
+        gameStarted = true;
+        startButton.style.display = 'none';
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// Pause the game
+function pauseGame() {
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+        pauseButton.textContent = 'Resume';
+    } else {
+        pauseButton.textContent = 'Pause';
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// Game loop
 function gameLoop() {
+    if (gamePaused) return;
     movePaddles();
     moveBall();
     requestAnimationFrame(gameLoop);
 }
 
-// Sound Effects
-function playSound(type) {
-    let sound;
-    if (type === 'paddle') {
-        sound = new Audio('https://www.fesliyanstudios.com/play-mp3/283');
-    } else if (type === 'score') {
-        sound = new Audio('https://www.fesliyanstudios.com/play-mp3/276');
-    } else if (type === 'bounce') {
-        sound = new Audio('https://www.fesliyanstudios.com/play-mp3/277');
-    }
-    if (sound) sound.play();
-}
+document.addEventListener('keydown', keyDownHandler);
+document.addEventListener('keyup', keyUpHandler);
 
-// Start Game
-gameLoop();
-
+startButton.addEventListener('click', startGame);
+pauseButton.addEventListener('click', pauseGame);
