@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #222;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .game-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background-color: black;
+            border: 2px solid white;
+        }
+        .paddle {
+            position: absolute;
+            width: 10px;
+            height: 60px;
+            background-color: white;
+        }
+        .ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        .score {
+            position: absolute;
+            top: 10px;
+            color: white;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+            width: 100%;
+            text-align: center;
+        }
+        .overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .hidden {
+            display: none;
+        }
+        .pause-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="paddle" id="left-paddle" style="left: 0;"></div>
+        <div class="paddle" id="right-paddle" style="right: 0;"></div>
+        <div class="ball" id="ball"></div>
+        <div class="score" id="score">0 - 0</div>
+        <div class="overlay" id="start-overlay">Press any key to start</div>
+    </div>
+    <button class="pause-button" id="pause-btn">Pause</button>
+
+    <script>
+        const leftPaddle = document.getElementById('left-paddle');
+        const rightPaddle = document.getElementById('right-paddle');
+        const ball = document.getElementById('ball');
+        const scoreDisplay = document.getElementById('score');
+        const gameContainer = document.querySelector('.game-container');
+        const startOverlay = document.getElementById('start-overlay');
+        const pauseButton = document.getElementById('pause-btn');
+
+        let leftPaddleY = 150;
+        let rightPaddleY = 150;
+        let ballX = 292.5, ballY = 192.5, ballSpeedX = 2, ballSpeedY = 2;
+        const paddleSpeed = 4;
+        let gamePaused = true;
+        let gameStarted = false;
+        let gameRunning = false; // Prevent multiple game loop calls
+
+        let leftScore = 0, rightScore = 0;
+
+        const keysPressed = {
+            ArrowUp: false,
+            ArrowDown: false,
+            w: false,
+            s: false
+        };
+
+        function movePaddles() {
+            if (keysPressed['ArrowUp']) leftPaddleY -= paddleSpeed;
+            if (keysPressed['ArrowDown']) leftPaddleY += paddleSpeed;
+            if (keysPressed['w']) rightPaddleY -= paddleSpeed;
+            if (keysPressed['s']) rightPaddleY += paddleSpeed;
+
+            if (leftPaddleY < 0) leftPaddleY = 0;
+            if (leftPaddleY > gameContainer.clientHeight - leftPaddle.offsetHeight) leftPaddleY = gameContainer.clientHeight - leftPaddle.offsetHeight;
+            if (rightPaddleY < 0) rightPaddleY = 0;
+            if (rightPaddleY > gameContainer.clientHeight - rightPaddle.offsetHeight) rightPaddleY = gameContainer.clientHeight - rightPaddle.offsetHeight;
+
+            leftPaddle.style.top = leftPaddleY + 'px';
+            rightPaddle.style.top = rightPaddleY + 'px';
+        }
+
+        function moveBall() {
+            if (gamePaused) return;
+
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballY <= 0 || ballY >= gameContainer.clientHeight - ball.offsetHeight) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            if (ballX <= leftPaddle.offsetWidth && ballY >= leftPaddleY && ballY <= leftPaddleY + leftPaddle.offsetHeight) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            if (ballX >= gameContainer.clientWidth - ball.offsetWidth - rightPaddle.offsetWidth && ballY >= rightPaddleY && ballY <= rightPaddleY + rightPaddle.offsetHeight) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            if (ballX <= 0) {
+                rightScore += 1;
+                updateScore();
+                resetBall();
+            }
+
+            if (ballX >= gameContainer.clientWidth - ball.offsetWidth) {
+                leftScore += 1;
+                updateScore();
+                resetBall();
+            }
+
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `${leftScore} - ${rightScore}`;
+        }
+
+        function resetBall() {
+            ballX = 292.5;
+            ballY = 192.5;
+            ballSpeedX = 2;
+            ballSpeedY = 2;
+        }
+
+        function togglePause() {
+            gamePaused = !gamePaused;
+            pauseButton.textContent = gamePaused ? "Resume" : "Pause";
+        }
+
+        function startGame() {
+            if (!gameStarted) {
+                gameStarted = true;
+                gamePaused = false;
+                startOverlay.classList.add('hidden');
+                if (!gameRunning) {
+                    gameRunning = true;
+                    gameLoop();
+                }
+            }
+        }
+
+        function keyDownHandler(e) {
+            if (!gameStarted) startGame();
+            if (e.key in keysPressed) keysPressed[e.key] = true;
+        }
+
+        function keyUpHandler(e) {
+            if (e.key in keysPressed) keysPressed[e.key] = false;
+        }
+
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+        pauseButton.addEventListener('click', togglePause);
+
+        function gameLoop() {
+            if (!gamePaused) {
+                movePaddles();
+                moveBall();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>

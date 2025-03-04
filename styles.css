@@ -1,0 +1,85 @@
+/* Reset default margin and center everything */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #111;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Game container */
+.game-container {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    background: linear-gradient(to bottom, #222, #000);
+    border: 2px solid white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+/* Paddles */
+.paddle {
+    position: absolute;
+    width: 10px;
+    height: 70px;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 0 10px white;
+    transition: top 0.05s ease-out;
+}
+
+/* Ball */
+.ball {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 0 15px white;
+    transition: transform 0.02s linear;
+}
+
+/* Scoreboard */
+.score {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 24px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Game Over message */
+.game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 30px;
+    color: red;
+    font-weight: bold;
+    text-shadow: 0 0 10px red;
+    display: none;
+}
+
+/* Animations */
+@keyframes glow {
+    0% { box-shadow: 0 0 10px white; }
+    50% { box-shadow: 0 0 20px cyan; }
+    100% { box-shadow: 0 0 10px white; }
+}
+
+.paddle, .ball {
+    animation: glow 1s infinite alternate;
+}
+
